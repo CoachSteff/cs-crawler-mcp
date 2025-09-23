@@ -8,7 +8,7 @@ A **Model Context Protocol (MCP) server** that provides web crawling functionali
 - 📄 **Multiple Output Formats**: Get content as Markdown, HTML, plain text, or structured JSON
 - 📊 **Metadata Extraction**: Extract page metadata including title, description, links, and more
 - 🔧 **MCP Integration**: Seamlessly integrates with any MCP-enabled application
-- 🐳 **Flexible Deployment**: Run locally, on a VPS, or in a Docker container
+- 🚀 **Easy Deployment**: Run locally or on any server with Python
 - ⚡ **Async Performance**: Built with Python asyncio for optimal performance
 
 ## Prerequisites
@@ -162,16 +162,16 @@ python3 examples/basic_usage.py
 python3 examples/advanced_usage.py
 ```
 
-### Docker Deployment
+### Server Deployment
 
-For containerized deployment:
+For production deployment:
 
 ```bash
-# Build the Docker image
-docker build -t cs-crawler-mcp .
+# Install dependencies
+pip install -r requirements.txt
 
-# Run the container
-docker run -p 3000:3000 cs-crawler-mcp
+# Run the server
+python server.py
 ```
 
 ### Configuration Options

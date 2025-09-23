@@ -45,18 +45,7 @@ python -m playwright install chromium
 # 4. Configure MCP client (see Configuration section)
 ```
 
-### Option 3: Docker Installation
-
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-
-# Or build manually
-docker build -t cs-crawler-mcp .
-docker run -it cs-crawler-mcp
-```
-
-### Option 4: Package Installation (Future)
+### Option 3: Package Installation (Future)
 
 ```bash
 # Install from PyPI (when published)
@@ -112,50 +101,6 @@ export CRAWL4AI_SERVER_PATH="/custom/path/to/server.py"
 export CRAWL4AI_DEBUG=true
 ```
 
-## 🐳 Docker Deployment
-
-### Basic Docker Run
-
-```bash
-# Build the image
-docker build -t cs-crawler-mcp .
-
-# Run the server
-docker run -it cs-crawler-mcp
-```
-
-### Docker Compose
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f cs-crawler-mcp
-
-# Stop services
-docker-compose down
-```
-
-### Docker with Custom Configuration
-
-```bash
-# Mount custom config
-docker run -v $(pwd)/config.json:/app/config.json:ro cs-crawler-mcp
-
-# Set environment variables
-docker run -e CRAWL4AI_DEBUG=true cs-crawler-mcp
-```
-
-### Docker Registry
-
-```bash
-# Pull from GitHub Container Registry
-docker pull ghcr.io/coachsteff/cs-crawler-mcp:latest
-
-# Run from registry
-docker run -it ghcr.io/coachsteff/cs-crawler-mcp:latest
-```
 
 ## 🔧 Platform-Specific Instructions
 
@@ -242,22 +187,6 @@ asyncio.run(test())
 2. Start a new conversation
 3. Try: "Please crawl https://httpbin.org/html and show me the content"
 
-### Test Docker Deployment
-
-```bash
-# Test Docker image
-docker run --rm cs-crawler-mcp python -c "import crawl4ai, mcp; print('Docker test passed')"
-
-# Test with actual crawling
-docker run --rm cs-crawler-mcp python -c "
-import asyncio
-from server import crawl_url
-async def test():
-    result = await crawl_url({'url': 'https://httpbin.org/html'})
-    print('Docker crawl test passed!' if result else 'Docker crawl test failed!')
-asyncio.run(test())
-"
-```
 
 ## 🔍 Troubleshooting
 
@@ -288,16 +217,7 @@ source ~/venv-crawl4ai/bin/activate
 python -m playwright install chromium
 ```
 
-**4. "Docker build failed"**
-```bash
-# Check Docker is running
-docker --version
-
-# Clean Docker cache
-docker system prune -a
-```
-
-**5. "MCP client not connecting"**
+**4. "MCP client not connecting"**
 - Verify config.json file location and format
 - Check file permissions
 - Restart MCP client completely
@@ -316,9 +236,6 @@ ls ~/venv-crawl4ai/
 source ~/venv-crawl4ai/bin/activate
 pip list | grep -E "(crawl4ai|mcp)"
 
-# Check Docker
-docker --version
-docker-compose --version
 
 # Check MCP configuration
 cat ~/Library/Application\ Support/Claude/config.json  # macOS
@@ -354,21 +271,6 @@ export CRAWL4AI_CACHE_ENABLED=true
 export CRAWL4AI_MAX_CONCURRENT=5
 ```
 
-### Docker Performance
-
-```yaml
-# docker-compose.yml
-services:
-  cs-crawler-mcp:
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-          cpus: '2.0'
-        reservations:
-          memory: 2G
-          cpus: '1.0'
-```
 
 ## 🔒 Security Considerations
 
@@ -378,11 +280,6 @@ services:
 - Uses standard browser user agents
 - Respects robots.txt by default
 
-### Docker Deployment
-- Runs in isolated container
-- Non-root user by default
-- Minimal attack surface
-- Regular security updates
 
 ### Network Security
 - No external network access required
@@ -398,8 +295,6 @@ services:
 # Server logs
 tail -f ~/cs-crawler-mcp/server.log
 
-# Docker logs
-docker-compose logs -f cs-crawler-mcp
 
 # System logs
 journalctl -u cs-crawler-mcp  # systemd
@@ -411,8 +306,6 @@ journalctl -u cs-crawler-mcp  # systemd
 # Test server health
 python test_client.py
 
-# Docker health check
-docker run --rm cs-crawler-mcp python -c "import crawl4ai, mcp; print('OK')"
 ```
 
 ## 🚀 Production Deployment
@@ -437,28 +330,6 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-### Docker Swarm
-
-```yaml
-# docker-stack.yml
-version: '3.8'
-services:
-  cs-crawler-mcp:
-    image: ghcr.io/coachsteff/cs-crawler-mcp:latest
-    deploy:
-      replicas: 3
-      update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: on-failure
-    networks:
-      - mcp-network
-
-networks:
-  mcp-network:
-    driver: overlay
-```
 
 ## Support
 
