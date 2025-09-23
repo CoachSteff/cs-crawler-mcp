@@ -36,8 +36,18 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir crawl4ai>=0.3.0
+RUN pip install --no-cache-dir mcp>=1.0.0
+RUN pip install --no-cache-dir playwright>=1.40.0
+RUN pip install --no-cache-dir beautifulsoup4>=4.12.0
+RUN pip install --no-cache-dir requests>=2.31.0
+RUN pip install --no-cache-dir pydantic>=2.0.0
+RUN pip install --no-cache-dir pyyaml>=6.0
+RUN pip install --no-cache-dir aiohttp>=3.8.0
+RUN pip install --no-cache-dir python-dotenv>=1.0.0
+RUN pip install --no-cache-dir click>=8.0.0
+RUN pip install --no-cache-dir rich>=13.0.0
 
 # Install Playwright browsers
 RUN playwright install chromium
