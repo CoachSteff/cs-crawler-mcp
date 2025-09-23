@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of CS Crawler MCP by [@CoachSteff](https://github.com/CoachSteff)
 - Support for single URL crawling with multiple output formats
 - Metadata extraction from web pages
-- Docker support with multi-architecture builds
+- Cross-platform Python support
 - Comprehensive installation script for all platforms
 - Extensive documentation and examples
 - CI/CD pipeline with automated testing
@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🌐 **Single URL Crawling** - Extract clean, structured content from any website
 - 📊 **Multiple Output Formats** - Markdown, HTML, JSON, and plain text
 - 📋 **Metadata Extraction** - Get page titles, descriptions, and SEO information
-- 🐳 **Docker Support** - Run in containers for easy deployment
+- 🚀 **Easy Deployment** - Simple Python installation and setup
 - 🔧 **Flexible Configuration** - Customize for different environments
 - 📚 **Comprehensive Documentation** - Complete usage guide and examples
 - 🚀 **Easy Installation** - One-command setup for all platforms
@@ -56,14 +56,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Installation Methods
 - **Automatic Installation**: `./install.sh`
 - **Manual Installation**: Virtual environment setup
-- **Docker Installation**: `docker-compose up -d`
+- **Systemd Service**: Linux service installation
 - **Package Installation**: `pip install cs-crawler-mcp`
 
 ### Supported Platforms
 - macOS (Intel and Apple Silicon)
 - Linux (Ubuntu, Debian, CentOS, RHEL)
 - Windows (with WSL or native Python)
-- Docker (multi-architecture support)
 
 ### MCP Client Support
 - Claude Desktop
@@ -79,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complete MCP server implementation
 - Single URL crawling with multiple output formats
 - Metadata extraction capabilities
-- Docker containerization
+- Cross-platform compatibility
 - Cross-platform installation scripts
 - Comprehensive documentation
 - Example usage scenarios

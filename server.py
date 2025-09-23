@@ -34,7 +34,7 @@ class StdoutRedirect:
         sys.stderr = self.original_stderr
 
 # Configure logging to file only
-log_file = os.path.join(os.path.dirname(__file__), "crawl4ai-mcp.log")
+log_file = os.path.join(os.path.dirname(__file__), "cs-crawler-mcp.log")
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',

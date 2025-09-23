@@ -182,7 +182,7 @@ Add any other context about the problem here.
 
 ### Medium Priority
 - **New features** - Additional crawling options, output formats
-- **Docker improvements** - Better containerization
+- **Performance improvements** - Better crawling speed and efficiency
 - **CI/CD enhancements** - Automated testing, deployment
 - **Cross-platform support** - Windows, Linux compatibility
 
