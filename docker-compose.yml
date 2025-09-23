@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  cs-crawler-mcp:
+    build: .
+    container_name: cs-crawler-mcp
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CRAWL4AI_DEBUG=false
+    volumes:
+      # Mount config for customization
+      - ./config.json:/app/config.json:ro
+      # Mount cache directory for persistence
+      - crawl4ai-cache:/app/.crawl4ai
+    networks:
+      - mcp-network
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import crawl4ai, mcp; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a simple web interface for testing
+  web-interface:
+    image: nginx:alpine
+    container_name: crawl4ai-web-interface
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web-interface:/usr/share/nginx/html:ro
+    depends_on:
+      - cs-crawler-mcp
+    networks:
+      - mcp-network
+
+volumes:
+  crawl4ai-cache:
+    driver: local
+
+networks:
+  mcp-network:
+    driver: bridge

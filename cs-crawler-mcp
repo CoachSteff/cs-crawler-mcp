@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""
+CS Crawler MCP - Wrapper
+A simple wrapper that runs the MCP server with user-specified configuration.
+"""
+
+import os
+import sys
+import subprocess
+import json
+from pathlib import Path
+
+def load_config():
+    """Load configuration from config.json in the same directory as this script"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, "config.json")
+    
+    if not os.path.exists(config_path):
+        print(f"Error: Config file not found at {config_path}", file=sys.stderr)
+        print("Please create a config.json file with your settings.", file=sys.stderr)
+        sys.exit(1)
+    
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in config file: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error reading config file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def main():
+    """Main entry point"""
+    # Load user configuration
+    config = load_config()
+    
+    # Get script directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Get Python path from config
+    python_path = config.get("python_path")
+    if not python_path:
+        print("Error: python_path not specified in config.json", file=sys.stderr)
+        print("Please add 'python_path' to your config file.", file=sys.stderr)
+        sys.exit(1)
+    
+    # Get server path from config (default to server.py in same directory)
+    server_path = config.get("server_path", os.path.join(script_dir, "server.py"))
+    
+    # Check if files exist
+    if not os.path.exists(python_path):
+        print(f"Error: Python executable not found at {python_path}", file=sys.stderr)
+        print("Please check your python_path in config.json", file=sys.stderr)
+        sys.exit(1)
+    
+    if not os.path.exists(server_path):
+        print(f"Error: Server file not found at {server_path}", file=sys.stderr)
+        print("Please check your server_path in config.json", file=sys.stderr)
+        sys.exit(1)
+    
+    # Get environment variables from config
+    env = os.environ.copy()
+    if "env" in config:
+        env.update(config["env"])
+    
+    # Run the server
+    try:
+        subprocess.run([python_path, server_path], env=env, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running server: {e}", file=sys.stderr)
+        sys.exit(e.returncode)
+    except KeyboardInterrupt:
+        print("\nServer stopped by user")
+        sys.exit(0)
+
+if __name__ == "__main__":
+    main()

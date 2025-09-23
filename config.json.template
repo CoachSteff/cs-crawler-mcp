@@ -1,0 +1,7 @@
+{
+  "python_path": "/path/to/your/python/with/crawl4ai",
+  "server_path": "/path/to/your/cs-crawler-mcp/server.py",
+  "env": {
+    "PYTHONPATH": "/path/to/your/python/site-packages"
+  }
+}
