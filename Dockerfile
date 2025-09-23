@@ -6,18 +6,23 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
-# Install system dependencies
+# Install system dependencies required for crawl4ai
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /app
 
 # Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install crawl4ai mcp
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir mcp
+RUN pip install --no-cache-dir crawl4ai
 
 # Copy application files
 COPY . .
