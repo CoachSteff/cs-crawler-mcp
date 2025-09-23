@@ -1,3 +1,2 @@
-# CS Crawler MCP - Minimal Production Dependencies
-crawl4ai>=0.3.0
-mcp>=1.0.0
+# CS Crawler MCP - Basic Dependencies Only
+# Note: crawl4ai and mcp should be installed separately when needed
