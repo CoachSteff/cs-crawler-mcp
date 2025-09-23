@@ -7,10 +7,9 @@ A Model Context Protocol server that provides web crawling functionality via Cra
 import asyncio
 import json
 import logging
-import sys
 import os
-import contextlib
-from io import StringIO
+import sys
+from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Sequence
 from urllib.parse import urlparse
 
@@ -19,46 +18,20 @@ class StdoutRedirect:
     def __init__(self):
         self.original_stdout = sys.stdout
         self.original_stderr = sys.stderr
-        
+        self.devnull = open(os.devnull, 'w')
+    
     def __enter__(self):
-        # Redirect to devnull to suppress all output
-        sys.stdout = open(os.devnull, 'w')
-        sys.stderr = open(os.devnull, 'w')
+        sys.stdout = self.devnull
+        sys.stderr = self.devnull
         return self
-        
+    
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # Restore original stdout/stderr
         if sys.stdout != self.original_stdout:
             sys.stdout.close()
         if sys.stderr != self.original_stderr:
             sys.stderr.close()
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr
-
-# Import Crawl4AI with suppressed output
-with StdoutRedirect():
-    try:
-        import crawl4ai
-        from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
-    except ImportError as e:
-        # Restore stdout to show error
-        print(f"Error: Failed to import crawl4ai: {e}", file=sys.__stderr__)
-        print("Please install crawl4ai: pip install crawl4ai", file=sys.__stderr__)
-        sys.exit(1)
-
-try:
-    from mcp.server import Server
-    from mcp.server.stdio import stdio_server
-    from mcp.types import (
-        CallToolResult,
-        ListToolsResult,
-        TextContent,
-        Tool,
-    )
-except ImportError as e:
-    print(f"Error: Failed to import MCP: {e}", file=sys.__stderr__)
-    print("Please install MCP: pip install mcp", file=sys.__stderr__)
-    sys.exit(1)
 
 # Configure logging to file only
 log_file = os.path.join(os.path.dirname(__file__), "crawl4ai-mcp.log")
@@ -69,14 +42,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create MCP server
-server = Server("cs-crawler-mcp")
-
 # Global crawler instance
 crawler = None
 
-async def get_crawler(config: Dict[str, Any] = None) -> AsyncWebCrawler:
+async def get_crawler(config: Dict[str, Any] = None):
     """Get or create a crawler instance"""
+    # Import Crawl4AI when needed
+    try:
+        from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
+    except ImportError as e:
+        logger.error(f"Failed to import crawl4ai: {e}")
+        raise RuntimeError("Crawl4AI is not installed. Please install it with: pip install crawl4ai")
+    
     global crawler
     if crawler is None:
         try:
@@ -102,168 +79,184 @@ async def cleanup():
     global crawler
     if crawler:
         try:
-            with StdoutRedirect():
-                await crawler.aclose()
-            logger.info("Crawler closed successfully")
+            await crawler.close()
+            logger.info("Crawler instance closed")
         except Exception as e:
             logger.error(f"Error closing crawler: {e}")
         finally:
             crawler = None
 
-@server.list_tools()
-async def list_tools() -> List[Tool]:
-    """List all available tools"""
-    logger.info("Tools list requested")
-    return [
-        Tool(
-            name="crawl_url",
-            description="Crawl a single URL and extract content as clean Markdown",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "description": "The URL to crawl"
-                    },
-                    "output_format": {
-                        "type": "string",
-                        "enum": ["markdown", "html", "text", "json"],
-                        "default": "markdown",
-                        "description": "Output format for the content"
-                    }
-                },
-                "required": ["url"]
-            }
-        ),
-        Tool(
-            name="get_page_metadata",
-            description="Extract metadata from a webpage (title, description, etc.)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "description": "URL to get metadata from"
-                    }
-                },
-                "required": ["url"]
-            }
-        )
-    ]
-
-@server.call_tool()
-async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
-    """Handle tool calls"""
-    logger.info(f"Tool called: {name} with args: {arguments}")
+async def crawl_url_handler(arguments: Dict[str, Any]):
+    """Handle crawl_url tool calls"""
     try:
-        if name == "crawl_url":
-            return await crawl_url(arguments)
-        elif name == "get_page_metadata":
-            return await get_page_metadata(arguments)
-        else:
-            error_msg = f"Unknown tool: {name}"
-            logger.error(error_msg)
-            return [TextContent(type="text", text=error_msg)]
-    except Exception as e:
-        error_msg = f"Error executing tool {name}: {str(e)}"
-        logger.error(error_msg)
-        return [TextContent(type="text", text=error_msg)]
-
-async def crawl_url(args: Dict[str, Any]) -> List[TextContent]:
-    """Crawl a single URL"""
-    url = args["url"]
-    output_format = args.get("output_format", "markdown")
-    
-    logger.info(f"Crawling URL: {url} in format: {output_format}")
-
-    try:
+        url = arguments.get("url")
+        if not url:
+            return [{"type": "text", "text": "Error: URL is required"}]
+        
+        # Validate URL
+        parsed = urlparse(url)
+        if not parsed.scheme or not parsed.netloc:
+            return [{"type": "text", "text": f"Error: Invalid URL format: {url}"}]
+        
+        output_format = arguments.get("output_format", "markdown")
+        if output_format not in ["markdown", "html", "text", "json"]:
+            return [{"type": "text", "text": f"Error: Invalid output format: {output_format}"}]
+        
+        # Get crawler instance
         crawler_instance = await get_crawler()
         
         # Suppress all Crawl4AI output during crawling
         with StdoutRedirect():
-            run_config = CrawlerRunConfig(
-                word_count_threshold=200,
-                bypass_cache=False
-            )
-
-            result = await crawler_instance.arun(url=url, config=run_config)
+            result = await crawler_instance.arun(url=url)
         
-        if result.success:
-            content = ""
-            if output_format == "markdown":
-                content = result.markdown or "No markdown content available"
-            elif output_format == "html":
-                content = result.html or "No HTML content available"
-            elif output_format == "text":
-                content = result.cleaned_html or "No text content available"
-            elif output_format == "json":
-                content = json.dumps({
-                    "url": url,
-                    "title": result.metadata.get("title", "") if result.metadata else "",
-                    "markdown": result.markdown or "",
-                    "html": result.html or "",
-                    "metadata": result.metadata or {}
-                }, indent=2, ensure_ascii=False)
-
-            logger.info(f"Successfully crawled {url}")
-            return [TextContent(type="text", text=content)]
-        else:
-            error_msg = f"Error crawling {url}: {result.error_message}"
+        if not result.success:
+            error_msg = f"Failed to crawl {url}: {result.error_message if hasattr(result, 'error_message') else 'Unknown error'}"
             logger.error(error_msg)
-            return [TextContent(type="text", text=error_msg)]
-            
+            return [{"type": "text", "text": error_msg}]
+        
+        # Format output based on requested format
+        if output_format == "markdown":
+            content = result.markdown if hasattr(result, 'markdown') and result.markdown else result.cleaned_html
+        elif output_format == "html":
+            content = result.cleaned_html if hasattr(result, 'cleaned_html') else result.html
+        elif output_format == "text":
+            content = result.cleaned_html if hasattr(result, 'cleaned_html') else result.html
+        elif output_format == "json":
+            content = json.dumps({
+                "url": url,
+                "title": getattr(result, 'title', ''),
+                "content": result.markdown if hasattr(result, 'markdown') and result.markdown else result.cleaned_html,
+                "metadata": {
+                    "status_code": getattr(result, 'status_code', 200),
+                    "word_count": len((result.markdown or result.cleaned_html or '').split()),
+                    "links_count": len(getattr(result, 'links', [])),
+                    "media_count": len(getattr(result, 'media', []))
+                }
+            }, indent=2)
+        
+        logger.info(f"Successfully crawled {url} with {output_format} format")
+        return [{"type": "text", "text": content}]
+        
     except Exception as e:
         error_msg = f"Exception while crawling {url}: {str(e)}"
         logger.error(error_msg)
-        return [TextContent(type="text", text=error_msg)]
+        return [{"type": "text", "text": error_msg}]
 
-async def get_page_metadata(args: Dict[str, Any]) -> List[TextContent]:
-    """Get metadata from a webpage"""
-    url = args["url"]
-    
-    logger.info(f"Getting metadata for URL: {url}")
-
+async def get_metadata_handler(arguments: Dict[str, Any]):
+    """Handle get_metadata tool calls"""
     try:
+        url = arguments.get("url")
+        if not url:
+            return [{"type": "text", "text": "Error: URL is required"}]
+        
+        # Validate URL
+        parsed = urlparse(url)
+        if not parsed.scheme or not parsed.netloc:
+            return [{"type": "text", "text": f"Error: Invalid URL format: {url}"}]
+        
+        # Get crawler instance
         crawler_instance = await get_crawler()
         
         # Suppress all Crawl4AI output during crawling
         with StdoutRedirect():
-            run_config = CrawlerRunConfig(
-                word_count_threshold=0  # We only want metadata
-            )
-
-            result = await crawler_instance.arun(url=url, config=run_config)
+            result = await crawler_instance.arun(url=url)
         
-        if result.success:
-            metadata = {
-                "url": url,
-                "title": result.metadata.get("title", "") if result.metadata else "",
-                "description": result.metadata.get("description", "") if result.metadata else "",
-                "keywords": result.metadata.get("keywords", "") if result.metadata else "",
-                "language": result.metadata.get("language", "") if result.metadata else "",
-                "author": result.metadata.get("author", "") if result.metadata else "",
-                "links_count": len(result.links) if result.links else 0,
-                "media_count": len(result.media) if result.media else 0,
-                "word_count": len(result.markdown.split()) if result.markdown else 0,
-                "status_code": getattr(result, 'status_code', None),
-                "response_headers": getattr(result, 'response_headers', {})
-            }
-            
-            logger.info(f"Successfully retrieved metadata for {url}")
-            return [TextContent(type="text", text=json.dumps(metadata, indent=2, ensure_ascii=False))]
-        else:
-            error_msg = f"Error retrieving metadata from {url}: {result.error_message}"
+        if not result.success:
+            error_msg = f"Failed to crawl {url}: {result.error_message if hasattr(result, 'error_message') else 'Unknown error'}"
             logger.error(error_msg)
-            return [TextContent(type="text", text=error_msg)]
-            
+            return [{"type": "text", "text": error_msg}]
+        
+        # Extract metadata
+        metadata = {
+            "url": url,
+            "title": getattr(result, 'title', ''),
+            "word_count": len((result.markdown or result.cleaned_html or '').split()),
+            "links_count": len(getattr(result, 'links', [])),
+            "media_count": len(getattr(result, 'media', [])),
+            "status_code": getattr(result, 'status_code', 200),
+            "language": getattr(result, 'language', '')
+        }
+        
+        logger.info(f"Successfully extracted metadata for {url}")
+        return [{"type": "text", "text": json.dumps(metadata, indent=2)}]
+        
     except Exception as e:
         error_msg = f"Exception while getting metadata for {url}: {str(e)}"
         logger.error(error_msg)
-        return [TextContent(type="text", text=error_msg)]
+        return [{"type": "text", "text": error_msg}]
 
 async def main():
     """Main function"""
+    # Import MCP when needed
+    try:
+        from mcp.server import Server
+        from mcp.server.stdio import stdio_server
+        from mcp.types import (
+            CallToolResult,
+            ListToolsResult,
+            TextContent,
+            Tool,
+        )
+    except ImportError as e:
+        logger.error(f"Failed to import MCP: {e}")
+        raise RuntimeError("MCP is not installed. Please install it with: pip install mcp")
+    
     logger.info("Starting CS Crawler MCP")
+    
+    # Create MCP server
+    server = Server("cs-crawler-mcp")
+    
+    # Register tools
+    @server.list_tools()
+    async def list_tools() -> ListToolsResult:
+        return ListToolsResult(
+            tools=[
+                Tool(
+                    name="crawl_url",
+                    description="Crawl a single URL and extract content in your preferred format",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "description": "The URL to crawl"
+                            },
+                            "output_format": {
+                                "type": "string",
+                                "enum": ["markdown", "html", "text", "json"],
+                                "description": "Output format (default: markdown)"
+                            }
+                        },
+                        "required": ["url"]
+                    }
+                ),
+                Tool(
+                    name="get_metadata",
+                    description="Get metadata about a URL without downloading the full content",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "description": "The URL to get metadata for"
+                            }
+                        },
+                        "required": ["url"]
+                    }
+                )
+            ]
+        )
+    
+    @server.call_tool()
+    async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
+        if name == "crawl_url":
+            result = await crawl_url_handler(arguments)
+            return [TextContent(type="text", text=result[0]["text"])]
+        elif name == "get_metadata":
+            result = await get_metadata_handler(arguments)
+            return [TextContent(type="text", text=result[0]["text"])]
+        else:
+            return [TextContent(type="text", text=f"Unknown tool: {name}")]
     
     try:
         options = server.create_initialization_options()
@@ -282,6 +275,8 @@ async def main():
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Server interrupted by user")
     except Exception as e:
-        print(f"Fatal error: {e}", file=sys.__stderr__)
+        logger.error(f"Server failed to start: {e}")
         sys.exit(1)
