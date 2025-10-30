@@ -47,7 +47,7 @@ Add to your MCP client configuration (Claude Desktop, Cursor, etc.). Two options
   "mcpServers": {
     "cs-crawler": {
       "command": "npx",
-      "args": ["-y", "github:CoachSteff/cs-crawler-mcp"],
+      "args": ["-y", "github:CoachSteff/cs-crawler-mcp@main"],
       "env": {}
     }
   }
