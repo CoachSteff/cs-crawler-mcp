@@ -1,0 +1,18 @@
+{
+  "name": "cs-crawler-mcp-wrapper",
+  "version": "1.0.1",
+  "description": "NPX wrapper to run the cs-crawler-mcp (Python) MCP server",
+  "private": false,
+  "bin": {
+    "cs-crawler-mcp": "bin/cs-crawler-mcp.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CoachSteff/cs-crawler-mcp.git"
+  },
+  "author": "Steff VanHaverbeke",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  }
+}
