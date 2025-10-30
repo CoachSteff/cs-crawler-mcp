@@ -29,16 +29,8 @@ elif [ -d "$PROJECT_DIR/venv" ]; then
     VENV_PATH="$PROJECT_DIR/venv"
     echo "✅ Found project virtual environment: $VENV_PATH"
 else
-    echo "⚠️  No virtual environment found. Please create one with:"
-    echo "   python3 -m venv ~/venv-crawl4ai"
-    echo "   source ~/venv-crawl4ai/bin/activate"
-    echo "   pip install crawl4ai mcp"
-    echo ""
-    read -p "Do you want to continue anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+    echo "⚠️  No virtual environment found. Proceeding with system Python."
+    echo "   Tip: Create one with: python3 -m venv ~/venv-crawl4ai && source ~/venv-crawl4ai/bin/activate"
 fi
 
 # Find Python executable

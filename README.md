@@ -25,6 +25,17 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
+### Local configuration
+
+This project uses a local `config.json` (ignored by git) and ships a `config.json.template`.
+
+```bash
+cp config.json.template config.json
+# Edit python_path and server_path to your environment
+```
+
+CI/tests will fall back to `config.json.template` for schema checks when `config.json` is absent.
+
 ## Usage
 
 Add to your Claude Desktop configuration:
@@ -44,7 +55,7 @@ Add to your Claude Desktop configuration:
 ## Available Tools
 
 - `crawl_url` - Crawl a single URL
-- `get_page_metadata` - Extract page metadata
+- `get_metadata` - Extract page metadata
 
 ## License
 
