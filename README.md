@@ -38,14 +38,30 @@ CI/tests will fall back to `config.json.template` for schema checks when `config
 
 ## Usage
 
-Add to your Claude Desktop configuration:
+Add to your MCP client configuration (Claude Desktop, Cursor, etc.). Two options:
+
+- NPX (no Python pre-install, auto-bootstraps a local venv on first run):
 
 ```json
 {
   "mcpServers": {
     "cs-crawler": {
-      "command": "/path/to/cs-crawler-mcp/cs-crawler-mcp",
-      "args": [],
+      "command": "npx",
+      "args": ["-y", "github:CoachSteff/cs-crawler-mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+- Direct Python entrypoint (after `pip install -r requirements.txt`):
+
+```json
+{
+  "mcpServers": {
+    "cs-crawler": {
+      "command": "python3",
+      "args": ["/absolute/path/to/cs-crawler-mcp/server.py"],
       "env": {}
     }
   }
